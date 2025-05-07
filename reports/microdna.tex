@@ -36,7 +36,7 @@
 
 
 \section{Introduction}
-Circular DNA, particularly microDNA, have recieved significant attention for its potential role in genomic instability, cancer progression, and gene regulation. MicroDNA are short, circular DNA molecules that originate from the nuclear genome and have been detected in a variety of cell types, including cancerous tissues. Despite their prevalence, their formation mechanisms and biological functions remain poorly understood. 
+Circular DNA, particularly microDNA, have received significant academic attention for its potential role in genomic instability, cancer progression, and gene regulation. MicroDNA are short, circular DNA molecules that originate from the nuclear genome and have been detected in a variety of cell types, including cancerous tissues. Despite their prevalence, their formation mechanisms and biological functions remain poorly understood. 
 
 This analysis presents a computational pipeline designed to detect and characterize microDNA using high-throughput sequencing data. The approach involves identifying soft-clipped reads from a BAM file, aligning these clipped sequences to one another and to a reference genome, and computing a scoring metric to evaluate the likelihood of circularization. Additionally, the performance of various pairwise sequence alignment algorithms was empirically compared to identify the most suitable tool for this task. MicroDNA events were manually verified, to ensure the accuracy of the report. This work aims to streamline the discovery of microDNA and provide a reproducible framework for further experimental testing with alternative genomes.
 
@@ -44,7 +44,7 @@ This analysis presents a computational pipeline designed to detect and character
 \section{Results}
 A list of potential circles (microDNA) are written to a user-specified output file. If the output file is designated with a \verb|.csv| or \verb|.tsv| extension, the report includes the Start Position, End Position, Soft-Clip Alignment Score, Starting Soft-Clip Reference Alignment Score, Ending Soft-Clip Reference Alignment Score, and a computed Evidence Score for each candidate. Alternatively, if the user specifies a \verb|.txt| output, the report is expanded to include the full alignment strings: the alignment between the start and end soft-clips, the alignment between the start soft-clip and the reference genome, and the alignment between the end soft-clip and the reference genome. The reports are sorted by the Evidence Score, with the highest being first, and the lowest being last. 
 
-$979$ candidate circles were generated, with $139$ having strong supporting evidence (a positive Evidence Score) using the provided BAM and FASTA files (See the \href{}{data} directory). The other potential circles were included to allow the user to validate circles manually using \href{}{IGV} if desired. A sample of both file classes can be seen in Figures~\ref{fig:txt_ex} and~\ref{fig:csv}
+$979$ candidate circles were generated, with $139$ having strong supporting evidence (a positive Evidence Score) using the provided BAM and FASTA files (See the public \href{https://drive.google.com/drive/folders/1WYPwCzSv__28iQlHwvZUZpNlmjTM7Fea}{data} directory in Google Drive). The other potential circles were included to allow the user to validate circles manually using \href{https://igv.org/}{IGV} if desired. A sample of both file classes can be seen in Figures~\ref{fig:txt_ex} and~\ref{fig:csv}
 
 \begin{figure}[H]
 \centering
@@ -75,7 +75,7 @@ After quickly observing substantial performance bottlenecks with the developed S
 
 Four algorithms were tested:
 \begin{enumerate}
-    \item \href{google.com}{Ryan Layer's Smith-Waterman Algorithm}: Basic Python implementation using a fill matrix and traceback. 
+    \item \href{https://github.com/ryanlayerlab/sequence_alignment/tree/main}{Ryan Layer's Smith-Waterman Algorithm}: Basic Python implementation using a fill matrix and traceback. 
     \item Vincent Bowen's Smith-Waterman Algorithm: Basic Python implementation, almost identical to the algorithm developed by Ryan.
     \item \href{https://scikit.bio/docs/dev/generated/skbio.alignment.StripedSmithWaterman.html}{Sci-Kit Bio's Striped Smith-Waterman Algorithm}: Python library performing a striped (banded) Smith Waterman Alignment.
     \item \href{https://biopython.org/docs/dev/Tutorial/chapter_pairwise.html}{Biopython's Pairwise Aligner}: Highly configurable Python library, automatically selecting between: Needleman-Wunsch, Smith-Waterman, Gotoh (three-state), and Waterman-Smith-Beyer global and local pairwise alignment algorithms, and the Fast Optimal Global Alignment Algorithm (FOGSAA) based on user-inputted scoring schema. For this experiment, the Gotoh algorithm was used.
@@ -90,14 +90,13 @@ To detect microDNA, an algorithm was developed to: identify circular DNA sequenc
 
 The steps of the algorithm are as follows:
 \begin{enumerate}
-    \item Load and process the \href{}{BAM} file to extract aligned sequencing reads and the \href{}{FASTA} file to serve as the reference genome for downstream analysis.
+    \item Load and process the \href{https://samtools.github.io/hts-specs/SAMv1.pdf}{BAM} file to extract aligned sequencing reads and the \href{https://www.ncbi.nlm.nih.gov/genbank/fastaformat/}{FASTA} file to serve as the reference genome for downstream analysis.
     \item Identify soft-clipped regions at the start and end of reads by analyzing the CIGAR strings for the presence of matching segments adjacent to soft-clips.
     \item Aggregate start and end soft-clips based on their genomic positions, recording the number of reads exhibiting these characteristics at each site.
     \item Apply an empirically defined threshold to determine high-support sites. In this study, a minimum of 10 supporting reads at a given position was required for further analysis. All other sites were filtered out.
     \item Perform an brute-force pairwise alignment between all identified starting and ending soft-clips to evaluate potential circular junctions. 
 
     Here the alignment was performed using the Gotoh algorithm with the following parameters: a match score of 2, a mismatch penalty of -2, a gap opening penalty of -1, and a gap extension penalty of -0.5, configured in global alignment mode. Additionally, the aligner was configured with minimal penalties for gap opening and extension at the ends of the query: the left and right query gap opening scores, and the left and right gap extension scores were all set to -0.1. This schema prefers shifting the position of the sequences versus a mismatch, a desirable property when identifying regions of central homology, and matching junction tags. 
-    \item Compute an evidence-based metric to quantify the likelihood that a given candidate represents true microDNA (circle) formation. This score was defined as follows.
     \item Retain candidate pairs with an alignment score of at least 50 and a minimum separation of 5 base pairs between the clipped regions to ensure sequence homogeneity between the junction tags. These candidate sequences are then aligned against the reference genome. 
     
     Here the alignment was performed using the Gotoh algorithm with the following parameters: a match score of 2, a mismatch penalty of -3, a gap opening penalty of -25, and a gap extension penalty of -6, configured in global alignment mode. This schema strongly penalized both gap opening and extension, encouraging the aligner to favor mismatches instead. This behavior is desirable when aligning soft-clipped sequences, which are expected to differ from the reference genome at the soft-clipped regions, but should not be shifted through gap creation. This preserves the positional integrity of the sequences.
@@ -117,6 +116,8 @@ The steps of the algorithm are as follows:
 
 To replicate these experiments, clone the repository and then run the
 experiments and analysis as follows:
+
+The data files must be downloaded from the public \href{https://drive.google.com/drive/folders/1WYPwCzSv__28iQlHwvZUZpNlmjTM7Fea}{data} directory because they are too large for GitHub. Then move them to the \verb|data| folder.
 \begin{verbatim}
 $ git@github.com:vincedbowen/micro-dna.git
 $ cd micro-dna
